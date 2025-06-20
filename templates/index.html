@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Math Reels Deluxe</title>
+  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}" type="image/png">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div id="welcomeModal" class="welcome-modal">
+    <h2>📦 GitHub Math Reels Deluxe</h2>
+    <p>i tried to make something like instagram reels but for github repos.<br>
+      it kinda sucks tbh — blame the servers. so instead of videos, you get <strong>cool maths-based animations</strong>, <strong>python generated voiceovers</strong>, and some <strong>epic copyright-free bgm</strong>.</p>
+    <p>to add yourself: just punch in your github username above. <br><em>tts takes ~2 mins, don’t rage quit.</em></p>
+    <button id="startButton">🚀 start exploring</button>
+    <div id="audioError" class="error-notice"></div>
+  </div>
+
+  <header>
+    <div>
+      <input id="usernameInput" placeholder="add github user..." />
+      <button onclick="summarizeUser()">summarize</button>
+    </div>
+    <button onclick="loadSummaries()">🔄 refresh</button>
+  </header>
+  
+  <div id="reels">
+    <div class="loading">loading deluxe maths... 🌀</div>
+  </div>
+
+  <script src="{{ url_for('static', filename='animations.js') }}"></script>
+  <script src="{{ url_for('static', filename='more.js') }}"></script>
+  <div id="nowPlayingHUD" style="position:relative;top:10px;right:10px;z-index:999;background:#161b22cc;padding:0.5rem 1rem;border-radius:6px;color:#c9d1d9;font-size:0.9rem;display:none;backdrop-filter:blur(8px);border:1px solid #30363d;">🎧 playing: <span id="nowPlayingLabel">...</span></div>
+
+</body>
+
+</html>

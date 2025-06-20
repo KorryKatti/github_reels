@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>repoSummarizer9000</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #000;
+      color: #fff;
+      padding: 0;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    .app-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 0.5rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .header-title {
+      font-weight: bold;
+      color: #fff;
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .header-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      padding: 0.4rem 0.8rem;
+      font-family: inherit;
+      cursor: pointer;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.9rem;
+      backdrop-filter: blur(5px);
+    }
+
+    .header-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .header-btn.primary {
+      background: #ff0050;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .reel-container {
+      height: 100vh;
+      width: 100vw;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      padding-top: 60px; /* Matches header height */
+    }
+
+    .reel {
+      scroll-snap-align: start;
+      height: calc(100vh - 60px);
+      width: 100vw;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .video-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+    
+    .slide.active {
+      opacity: 1;
+    }
+
+    .repo-info {
+      position: absolute;
+      bottom: 80px;
+      left: 16px;
+      max-width: 80%;
+      z-index: 10;
+    }
+
+    .repo-header {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 12px;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      object-fit: cover;
+    }
+
+    .repo-title {
+      font-weight: bold;
+      font-size: 1rem;
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    .repo-summary {
+      display: none;
+      color: #fff;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      margin-bottom: 12px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px 12px;
+      border-radius: 8px;
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+
+    .action-buttons {
+      position: absolute;
+      right: 16px;
+      bottom: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      z-index: 10;
+    }
+
+    .action-btn {
+      background: transparent;
+      border: none;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .action-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(5px);
+      font-size: 24px;
+    }
+
+    .save-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-family: inherit;
+      cursor: pointer;
+      font-size: 0.9rem;
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .save-btn.saved {
+      background: rgba(255, 0, 80, 0.7);
+    }
+
+    .toggle-summary-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-family: inherit;
+      cursor: pointer;
+      font-size: 0.9rem;
+      backdrop-filter: blur(5px);
+      margin-top: 12px;
+    }
+
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      border-top-color: #ff0050;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      backdrop-filter: blur(5px);
+    }
+
+    .modal.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-content {
+      background: #1e1e1e;
+      padding: 2rem;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      border: 1px solid #333;
+    }
+
+    .modal-title {
+      margin-top: 0;
+      color: #fff;
+      font-size: 1.2rem;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 12px;
+      margin: 1rem 0;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: #fff;
+      font-family: inherit;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff0050;
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      border-radius: 20px;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 300;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* Instagram-like progress indicator */
+    .progress-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      gap: 5px;
+      z-index: 20;
+    }
+
+    .progress-bar {
+      height: 2px;
+      background: rgba(255, 255, 255, 0.3);
+      flex-grow: 1;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #fff;
+      transition: width linear;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-header">
+    <h1 class="header-title">RepoSummarizer9000</h1>
+    <div class="header-controls">
+      <button class="header-btn" id="refreshBtn">↻ Refresh</button>
+      <button class="header-btn primary" id="addUserBtn">+ Add User</button>
+    </div>
+  </div>
+
+  <div id="loadingScreen" class="loading-screen">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading reels...</div>
+  </div>
+
+  <div id="reelFeed" class="reel-container" style="display: none;"></div>
+
+  <div class="modal" id="addUserModal">
+    <div class="modal-content">
+      <h3 class="modal-title">Add GitHub User</h3>
+      <input type="text" class="modal-input" id="newUsername" placeholder="Enter GitHub username">
+      <div class="modal-actions">
+        <button class="header-btn" id="cancelAddUser">Cancel</button>
+        <button class="header-btn primary" id="confirmAddUser">Summarize</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // Enhanced image APIs with better fallbacks
+    const IMAGE_APIS = [
+      'https://picsum.photos/1080/1920?random=1',
+      'https://picsum.photos/1080/1920?random=2',
+      'https://picsum.photos/1080/1920?random=3',
+      'https://source.unsplash.com/random/1080x1920?nature',
+      'https://source.unsplash.com/random/1080x1920?technology',
+      'https://source.unsplash.com/random/1080x1920?code',
+      'https://placekitten.com/1080/1920',
+      'https://loremflickr.com/1080/1920/code',
+      'https://loremflickr.com/1080/1920/developer',
+      async () => {
+        try {
+          const res = await fetch('https://nekos.best/api/v2/neko');
+          const data = await res.json();
+          return data.results[0].url;
+        } catch {
+          return 'https://picsum.photos/1080/1920?random=fallback1';
+        }
+      },
+      async () => {
+        try {
+          const res = await fetch('https://dog.ceo/api/breeds/image/random');
+          const data = await res.json();
+          return data.message;
+        } catch {
+          return 'https://picsum.photos/1080/1920?random=fallback2';
+        }
+      }
+    ];
+
+    // Cache for preloaded images with expiration
+    const imageCache = {
+      get: (key) => {
+        const item = localStorage.getItem(`imgCache_${key}`);
+        if (!item) return null;
+        
+        const { url, expires } = JSON.parse(item);
+        if (expires < Date.now()) {
+          localStorage.removeItem(`imgCache_${key}`);
+          return null;
+        }
+        return url;
+      },
+      set: (key, url) => {
+        const expires = Date.now() + (7 * 24 * 60 * 60 * 1000); // 1 week expiration
+        localStorage.setItem(`imgCache_${key}`, JSON.stringify({ url, expires }));
+      }
+    };
+
+    // Improved image preloading with better fallbacks
+    async function preloadImage(url, cacheKey = null) {
+      // Try to get from cache first
+      if (cacheKey) {
+        const cached = imageCache.get(cacheKey);
+        if (cached) return cached;
+      }
+      
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          if (cacheKey) imageCache.set(cacheKey, url);
+          resolve(url);
+        };
+        img.onerror = () => {
+          // Fallback to a reliable placeholder
+          const fallback = 'https://picsum.photos/1080/1920?random=fallback';
+          if (cacheKey) imageCache.set(cacheKey, fallback);
+          resolve(fallback);
+        };
+        img.src = url;
+      });
+    }
+
+    function extractRepoName(repoUrl) {
+      try {
+        const parts = new URL(repoUrl).pathname.split('/');
+        return `${parts[1]}/${parts[2]}`;
+      } catch {
+        return repoUrl;
+      }
+    }
+
+    function truncateSummary(text, words = 50) {
+      return text.split(' ').slice(0, words).join(' ') + (text.split(' ').length > words ? '...' : '');
+    }
+
+    function generateIdFromRepo(repoUrl) {
+      return btoa(repoUrl);
+    }
+
+    function isSaved(id) {
+      const saved = JSON.parse(localStorage.getItem("saved_reels") || "[]");
+      return saved.includes(id);
+    }
+
+    function toggleSave(id, btn) {
+      let saved = JSON.parse(localStorage.getItem("saved_reels") || "[]");
+      if (saved.includes(id)) {
+        saved = saved.filter(x => x !== id);
+        btn.classList.remove("saved");
+        btn.innerHTML = '<div class="action-icon">♡</div>Save';
+      } else {
+        saved.push(id);
+        btn.classList.add("saved");
+        btn.innerHTML = '<div class="action-icon">❤️</div>Saved';
+      }
+      localStorage.setItem("saved_reels", JSON.stringify(saved));
+    }
+
+    async function fetchAvatar(username) {
+      const cacheKey = `avatar_${username}`;
+      const cached = imageCache.get(cacheKey);
+      if (cached) return cached;
+      
+      try {
+        const res = await fetch(`https://api.github.com/users/${username}`);
+        if (!res.ok) return null;
+        const data = await res.json();
+        imageCache.set(cacheKey, data.avatar_url);
+        return data.avatar_url;
+      } catch {
+        return null;
+      }
+    }
+
+    // More reliable image fetching with multiple fallbacks
+    async function fetchRandomImage(index) {
+      const cacheKey = `img_${index}_${Math.floor(Date.now() / (24 * 60 * 60 * 1000))}`; // Daily cache
+      const cached = imageCache.get(cacheKey);
+      if (cached) return cached;
+      
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        try {
+          const randomApi = IMAGE_APIS[Math.floor(Math.random() * IMAGE_APIS.length)];
+          let imageUrl;
+          
+          if (typeof randomApi === 'function') {
+            imageUrl = await randomApi();
+          } else if (randomApi.includes('dog.ceo')) {
+            const res = await fetch(randomApi);
+            const data = await res.json();
+            imageUrl = data.message;
+          } else {
+            imageUrl = randomApi;
+          }
+          
+          // Verify the image actually loads
+          await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = imageUrl;
+          });
+          
+          imageCache.set(cacheKey, imageUrl);
+          return imageUrl;
+        } catch (err) {
+          attempts++;
+          if (attempts >= maxAttempts) {
+            const fallback = 'https://picsum.photos/1080/1920?random=finalfallback';
+            imageCache.set(cacheKey, fallback);
+            return fallback;
+          }
+        }
+      }
+    }
+
+    function createSlideshow(container) {
+      const slides = container.querySelectorAll('.slide');
+      if (slides.length === 0) return;
+      
+      // Create progress bars
+      const progressContainer = document.createElement('div');
+      progressContainer.className = 'progress-container';
+      
+      const progressBars = Array.from({ length: slides.length }, () => {
+        const bar = document.createElement('div');
+        bar.className = 'progress-bar';
+        bar.innerHTML = '<div class="progress-fill"></div>';
+        return bar;
+      });
+      
+      progressBars.forEach(bar => progressContainer.appendChild(bar));
+      container.appendChild(progressContainer);
+      
+      let currentSlide = 0;
+      let interval;
+      let startTime;
+      const duration = 5000; // 5 seconds per slide
+      
+      function showSlide(index) {
+        // Reset all slides and progress bars
+        slides.forEach((slide, i) => {
+          slide.classList.remove('active');
+          progressBars[i].querySelector('.progress-fill').style.width = '0%';
+        });
+        
+        // Show the selected slide
+        slides[index].classList.add('active');
+        currentSlide = index;
+        startTime = Date.now();
+        
+        // Reset the interval
+        if (interval) clearInterval(interval);
+        
+        // Update progress bar continuously
+        interval = setInterval(() => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min((elapsed / duration) * 100, 100);
+          progressBars[currentSlide].querySelector('.progress-fill').style.width = `${progress}%`;
+          
+          if (progress >= 100) {
+            nextSlide();
+          }
+        }, 50);
+      }
+      
+      function nextSlide() {
+        const nextIndex = (currentSlide + 1) % slides.length;
+        showSlide(nextIndex);
+      }
+      
+      // Start with first slide
+      showSlide(0);
+      
+      // Cleanup on container removal
+      container._interval = interval;
+    }
+
+    async function loadReelFeed() {
+      const loadingScreen = document.getElementById('loadingScreen');
+      const reelFeed = document.getElementById('reelFeed');
+      
+      loadingScreen.style.display = 'flex';
+      reelFeed.style.display = 'none';
+      reelFeed.innerHTML = '';
+
+      try {
+        const res = await fetch('/get_summaries');
+        const data = await res.json();
+
+        if (res.ok && data.summaries.length > 0) {
+          // Preload all images before showing the reels
+          const preloadPromises = [];
+          const reelsData = [];
+
+          for (const repo of data.summaries) {
+            const repoName = extractRepoName(repo.repo);
+            const username = repoName.split('/')[0];
+            const avatar = await fetchAvatar(username);
+            const id = generateIdFromRepo(repo.repo);
+            const saved = isSaved(id);
+
+            // Fetch 3 random images for the slideshow with better fallbacks
+            const imageUrls = [];
+            for (let i = 0; i < 3; i++) {
+              const url = await fetchRandomImage(i);
+              imageUrls.push(url);
+              preloadPromises.push(preloadImage(url, `reel_${id}_img_${i}`));
+            }
+            
+            if (avatar) {
+              preloadPromises.push(preloadImage(avatar, `avatar_${username}`));
+            }
+
+            reelsData.push({
+              repo,
+              repoName,
+              username,
+              avatar,
+              id,
+              saved,
+              imageUrls
+            });
+          }
+
+          // Wait for all images to preload
+          await Promise.all(preloadPromises);
+
+          // Now create and display the reels
+          for (const reelData of reelsData) {
+            const reel = document.createElement('div');
+            reel.className = 'reel';
+
+            reel.innerHTML = `
+              <div class="video-container">
+                ${reelData.imageUrls.map((url, i) => `
+                  <img class="slide" src="${url}" alt="Slide ${i + 1}" loading="lazy">
+                `).join('')}
+              </div>
+              
+              <div class="repo-info">
+                <div class="repo-header">
+                  ${reelData.avatar ? `<img class="avatar" src="${reelData.avatar}" alt="${reelData.username}'s avatar">` : ''}
+                  <div class="repo-title">${reelData.repoName}</div>
+                </div>
+                <div class="repo-summary">${truncateSummary(reelData.repo.summary)}</div>
+                <button class="toggle-summary-btn">Show Summary</button>
+              </div>
+              
+              <div class="action-buttons">
+                <button class="action-btn">
+                  <div class="action-icon">👍</div>
+                  <span>Like</span>
+                </button>
+                <button class="action-btn">
+                  <div class="action-icon">💬</div>
+                  <span>Comment</span>
+                </button>
+                <button class="action-btn">
+                  <div class="action-icon">↻</div>
+                  <span>Remix</span>
+                </button>
+                <button class="action-btn save-btn ${reelData.saved ? 'saved' : ''}">
+                  ${reelData.saved ? '<div class="action-icon">❤️</div>Saved' : '<div class="action-icon">♡</div>Save'}
+                </button>
+              </div>
+            `;
+
+            // Initialize slideshow
+            createSlideshow(reel);
+
+            // Add event listeners
+            reel.querySelector('.save-btn').addEventListener('click', (e) => {
+              toggleSave(reelData.id, e.target.closest('.save-btn'));
+            });
+
+            reel.querySelector('.toggle-summary-btn').addEventListener('click', (e) => {
+              const summary = reel.querySelector('.repo-summary');
+              const isVisible = summary.style.display === 'block';
+              summary.style.display = isVisible ? 'none' : 'block';
+              e.target.textContent = isVisible ? 'Show Summary' : 'Hide Summary';
+            });
+
+            reelFeed.appendChild(reel);
+          }
+        } else {
+          reelFeed.innerHTML = `
+            <div class="reel" style="justify-content: center; align-items: center; text-align: center;">
+              <p style="font-size: 1.2rem;">${data.error || 'No summaries found. Search for a GitHub user to get started.'}</p>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('Error loading reels:', error);
+        reelFeed.innerHTML = `
+          <div class="reel" style="justify-content: center; align-items: center; text-align: center;">
+            <p style="font-size: 1.2rem;">Failed to load reels. Please try again.</p>
+          </div>
+        `;
+      } finally {
+        loadingScreen.style.display = 'none';
+        reelFeed.style.display = 'block';
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    async function queueUserForSummarization(username) {
+      try {
+        const response = await fetch('/summarize', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username }),
+        });
+
+        if (response.ok) {
+          showToast(`Added @${username} to queue`);
+        } else {
+          const error = await response.json();
+          showToast(error.error || 'Failed to queue user');
+        }
+      } catch (err) {
+        showToast('Network error - please try again');
+      }
+    }
+
+    document.getElementById('addUserBtn').addEventListener('click', () => {
+      document.getElementById('addUserModal').classList.add('active');
+      document.getElementById('newUsername').focus();
+    });
+
+    document.getElementById('cancelAddUser').addEventListener('click', () => {
+      document.getElementById('addUserModal').classList.remove('active');
+    });
+
+    document.getElementById('confirmAddUser').addEventListener('click', async () => {
+      const username = document.getElementById('newUsername').value.trim();
+      if (!username) return;
+
+      document.getElementById('addUserModal').classList.remove('active');
+      document.getElementById('newUsername').value = '';
+      
+      await queueUserForSummarization(username);
+      await loadReelFeed();
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', loadReelFeed);
+
+    document.addEventListener('DOMContentLoaded', loadReelFeed);
+
+    // Background Image Fetcher and Cacher (Improved)
+(function() {
+    // More reliable image sources with fallbacks
+    const IMAGE_SOURCES = [
+        () => `https://picsum.photos/1080/1920?random=${Math.random()}`,
+        () => `https://source.unsplash.com/random/1080x1920/?nature,technology,code&${Math.random()}`,
+        () => `https://picsum.photos/1080/1920?grayscale&${Math.random()}`,
+        () => `https://source.unsplash.com/collection/190727/1080x1920?${Math.random()}`
+    ];
+
+    // Enhanced cache with error tracking
+    const cache = {
+        set: (key, url) => {
+            const item = {
+                url: url,
+                expires: Date.now() + 86400000,
+                lastError: null
+            };
+            localStorage.setItem(`imgCache_${key}`, JSON.stringify(item));
+        },
+        get: (key) => {
+            const item = localStorage.getItem(`imgCache_${key}`);
+            if (!item) return null;
+            const data = JSON.parse(item);
+            if (data.expires < Date.now()) {
+                localStorage.removeItem(`imgCache_${key}`);
+                return null;
+            }
+            return data.url;
+        },
+        markError: (key) => {
+            const item = localStorage.getItem(`imgCache_${key}`);
+            if (item) {
+                const data = JSON.parse(item);
+                data.lastError = Date.now();
+                localStorage.setItem(`imgCache_${key}`, JSON.stringify(data));
+            }
+        }
+    };
+
+    // More robust image fetching
+    async function fetchAndCacheImage() {
+        try {
+            const getSource = IMAGE_SOURCES[Math.floor(Math.random() * IMAGE_SOURCES.length)];
+            const sourceUrl = getSource();
+            const cacheKey = `bg_${btoa(sourceUrl).slice(0, 32)}_${Math.floor(Date.now() / 86400000)}`;
+            
+            // Skip if recently failed
+            const cached = localStorage.getItem(`imgCache_${cacheKey}`);
+            if (cached && JSON.parse(cached).lastError) {
+                const lastErrorTime = JSON.parse(cached).lastError;
+                if (Date.now() - lastErrorTime < 3600000) { // 1 hour cooldown
+                    return;
+                }
+            }
+            
+            // Skip if already cached successfully
+            if (cache.get(cacheKey)) return;
+            
+            // Fetch with timeout
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
+            
+            await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    clearTimeout(timeout);
+                    resolve();
+                };
+                img.onerror = () => {
+                    clearTimeout(timeout);
+                    cache.markError(cacheKey);
+                    reject(new Error(`Failed to load image from ${sourceUrl}`));
+                };
+                img.src = sourceUrl;
+            });
+            
+            // Cache the successful load
+            cache.set(cacheKey, sourceUrl);
+            console.log('Successfully cached:', sourceUrl);
+        } catch (error) {
+            console.log('Image caching failed (will retry later):', error.message);
+        }
+    }
+
+    // Exponential backoff retry mechanism
+    async function startBackgroundFetching() {
+        let retryDelay = 10000; // Start with 10 seconds
+        
+        const fetchWithRetry = async () => {
+            try {
+                await fetchAndCacheImage();
+                retryDelay = 10000; // Reset to initial delay on success
+            } catch (error) {
+                retryDelay = Math.min(retryDelay * 2, 300000); // Max 5 minutes
+                console.log(`Next retry in ${retryDelay/1000} seconds`);
+            }
+            
+            setTimeout(fetchWithRetry, retryDelay);
+        };
+        
+        // Initial fetch
+        fetchWithRetry();
+        
+        // Also fetch when page becomes visible
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) fetchAndCacheImage();
+        });
+    }
+
+    // Start when page is loaded
+    if (document.readyState === 'complete') {
+        startBackgroundFetching();
+    } else {
+        window.addEventListener('load', startBackgroundFetching);
+    }
+})();
+  </script>
+</body>
+</html>

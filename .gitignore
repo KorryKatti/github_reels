@@ -1,0 +1,4 @@
+.env
+tts_cache/
+.venv/
+summaries.db

@@ -1,0 +1,11 @@
+requests
+google-generativeai
+python-dotenv
+fastapi
+uvicorn
+flask
+gTTS
+pydub
+pyupload
+pyttsx3
+ffmpeg-python
